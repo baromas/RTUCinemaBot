@@ -1,4 +1,5 @@
 import sqlite3
+from keyboards import date0, date1, date2
 
 
 async def add_user(user_id, user_name, full_name, room, phone_number):
@@ -13,13 +14,13 @@ async def add_user(user_id, user_name, full_name, room, phone_number):
     cursor.close()
 
 
-async def add_record(full_name, date, time, seat):
+async def add_record(user_id, full_name, date, time, seat):
     connect = sqlite3.connect('booking.db')
     cursor = connect.cursor()
     cursor.execute('SELECT MAX(number) FROM records;')
     num = cursor.fetchone()[0] + 1
-    m = [num, full_name, date, time, seat]
-    cursor.execute('INSERT INTO records (number, full_name, date, time, companions) VALUES (?,?,?,?,?)', m)
+    m = [user_id, num, full_name, date, time, seat]
+    cursor.execute('INSERT INTO records (user_id, number, full_name, date, time, companions) VALUES (?,?,?,?,?,?)', m)
     connect.commit()
     cursor.close()
 
@@ -60,6 +61,31 @@ async def check_user(user_id):
     return exists
 
 
+async def check_reservation(user_id):
+    connect = sqlite3.connect('booking.db')
+    cursor = connect.cursor()
+    exists = cursor.execute(f"""SELECT EXISTS(SELECT user_id FROM records WHERE (user_id ='{user_id}') \
+                             AND (date = '{date0.strftime("%d.%m.%Y")}' OR date = '{date1.strftime("%d.%m.%Y")}' OR 
+                             date = '{date2.strftime("%d.%m.%Y")}'))""").fetchone()[0]
+    connect.commit()
+    cursor.close()
+    return exists
+
+
+async def get_reservation(user_id):
+    connect = sqlite3.connect('booking.db')
+    cursor = connect.cursor()
+    reservation = {
+        "name": cursor.execute(f"SELECT full_name FROM records WHERE user_id = '{user_id}'").fetchone()[0],
+        "date": cursor.execute(f"SELECT date FROM records WHERE user_id = '{user_id}'").fetchone()[0],
+        "time": cursor.execute(f"SELECT time FROM records WHERE user_id = '{user_id}'").fetchone()[0],
+        "companions": cursor.execute(f"SELECT companions FROM records WHERE user_id = '{user_id}'").fetchone()[0]
+    }
+    connect.commit()
+    cursor.close()
+    return reservation
+
+
 async def get_user_info(user_id):
     connect = sqlite3.connect('booking.db')
     cursor = connect.cursor()
@@ -71,3 +97,29 @@ async def get_user_info(user_id):
     connect.commit()
     cursor.close()
     return user
+
+
+async def edit_name(user_id, full_name):
+    connect = sqlite3.connect('booking.db')
+    cursor = connect.cursor()
+    cursor.execute(f"UPDATE users SET full_name = '{full_name}' WHERE user_id ='{user_id}'")
+    if cursor.execute(f"SELECT EXISTS(SELECT user_id FROM records WHERE user_id ='{user_id}')").fetchone()[0]:
+        cursor.execute(f"UPDATE records SET full_name = '{full_name}' WHERE user_id ='{user_id}'")
+    connect.commit()
+    cursor.close()
+
+
+async def edit_room(user_id, room):
+    connect = sqlite3.connect('booking.db')
+    cursor = connect.cursor()
+    cursor.execute(f"UPDATE users SET room = '{room}' WHERE user_id ='{user_id}'")
+    connect.commit()
+    cursor.close()
+
+
+async def edit_phone(user_id, phone):
+    connect = sqlite3.connect('booking.db')
+    cursor = connect.cursor()
+    cursor.execute(f"UPDATE users SET phone = '{phone}' WHERE user_id ='{user_id}'")
+    connect.commit()
+    cursor.close()
