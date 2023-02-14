@@ -1,5 +1,5 @@
 import sqlite3
-from keyboards import date0, date1, date2
+import datetime
 
 
 async def add_user(user_id, user_name, full_name, room, phone_number):
@@ -64,9 +64,11 @@ async def check_user(user_id):
 async def check_reservation(user_id):
     connect = sqlite3.connect('booking.db')
     cursor = connect.cursor()
-    exists = cursor.execute(f"""SELECT EXISTS(SELECT user_id FROM records WHERE (user_id ='{user_id}') \
-                             AND (date = '{date0.strftime("%d.%m.%Y")}' OR date = '{date1.strftime("%d.%m.%Y")}' OR 
-                             date = '{date2.strftime("%d.%m.%Y")}'))""").fetchone()[0]
+    exists = \
+        cursor.execute(f"""SELECT EXISTS(SELECT user_id FROM records WHERE (user_id ='{user_id}') \
+             AND (date = '{datetime.datetime.today().strftime("%d.%m.%Y")}' OR date = 
+             '{(datetime.date.today() + datetime.timedelta(days=1)).strftime("%d.%m.%Y")}' OR 
+             date = '{(datetime.date.today() + datetime.timedelta(days=2)).strftime("%d.%m.%Y")}'))""").fetchone()[0]
     connect.commit()
     cursor.close()
     return exists
@@ -123,3 +125,19 @@ async def edit_phone(user_id, phone):
     cursor.execute(f"UPDATE users SET phone = '{phone}' WHERE user_id ='{user_id}'")
     connect.commit()
     cursor.close()
+
+
+async def check_reservation_day(date):
+    connect = sqlite3.connect('booking.db')
+    cursor = connect.cursor()
+    reservation = {
+        "16:00": cursor.execute(f"SELECT EXISTS(SELECT user_id "
+                                f"FROM records WHERE date ='{date}' AND time = '16:00')").fetchone()[0],
+        "18:00": cursor.execute(f"SELECT EXISTS(SELECT user_id "
+                                f"FROM records WHERE date ='{date}' AND time = '18:00')").fetchone()[0],
+        "20:00": cursor.execute(f"SELECT EXISTS(SELECT user_id "
+                                f"FROM records WHERE date ='{date}' AND time = '20:00')").fetchone()[0],
+    }
+    connect.commit()
+    cursor.close()
+    return reservation

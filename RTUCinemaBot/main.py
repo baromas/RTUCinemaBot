@@ -1,6 +1,5 @@
 import asyncio
-
-from aiogram import Bot, executor, Dispatcher
+from aiogram import Bot, Dispatcher, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from config import TOKEN_API

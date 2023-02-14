@@ -2,17 +2,38 @@ import pathlib
 from pathlib import Path
 from aiogram import types
 from aiogram.dispatcher.filters import Text
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.utils.markdown import bold
-
+from datetime import datetime
 from main import dp
-from keyboards import inline_kb_continue, inline_kb_start, inline_btn_back_edit, inline_kb_back_edit, \
-    inline_kb_date, inline_kb_time, inline_kb_cancel, inline_kb_back, inline_kb_no_res, inline_kb_edit
+from keyboards import *
 from sql import *
+from aiogram import types
 
+res_per_day = {}
+datetime.datetime.today()
 logo_path = Path(pathlib.Path.home(), 'RTUCinemaBot', 'RTUCinemaBot', 'CinemaBotLogo.png')
+
+
+def create_keyboard(date_chosen):
+    inline_kb_time = InlineKeyboardMarkup(row_width=sum([1 for i in res_per_day if not res_per_day[i]]))
+    print(res_per_day, sum([1 for i in res_per_day if not res_per_day[i]]))
+    date_format = datetime.datetime.strptime(date_chosen.replace('date_', ''), "%d.%m.%Y").day
+    if not res_per_day[
+        '16:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and int(
+            datetime.datetime.today().time().hour) < 16):
+        inline_kb_time.add(inline_btn_time0)
+    if not res_per_day[
+        '18:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and int(
+            datetime.datetime.today().time().hour) < 18):
+        inline_kb_time.add(inline_btn_time1)
+    if not res_per_day[
+        '20:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and int(
+            datetime.datetime.today().time().hour) < 20):
+        inline_kb_time.add(inline_btn_time2)
+    inline_kb_time.add(inline_btn_back_book_time)
+    return inline_kb_time
 
 
 # FSM
@@ -42,7 +63,7 @@ async def cmd_start(message: Message):
         await message.answer_photo(photo=types.InputFile(logo_path),
                                    caption=f"👤 Пользователь: <b>{(user_info['name'])}</b>\n"
                                            f"🏠 Комната: <b>{(user_info['room'])}</b>\n"
-                                           f"☎ Номер телефона: <b>{(user_info['phone_number'])}</b>",
+                                           f"📞 Номер телефона: <b>{(user_info['phone_number'])}</b>",
                                    parse_mode=types.ParseMode.HTML,
                                    reply_markup=inline_kb_start)
     else:
@@ -66,11 +87,11 @@ async def cmd_start(message: Message):
 
 # Reverse button
 @dp.callback_query_handler(text='back_start')
-async def go_back(callback: types.CallbackQuery, state: FSMContext):
+async def go_back(callback: types.CallbackQuery):
     user_info = await get_user_info(callback.from_user.id)
     await callback.message.edit_caption(caption=f"👤 Пользователь: <b>{(user_info['name'])}</b>\n"
                                                 f"🏠 Комната: <b>{(user_info['room'])}</b>\n"
-                                                f"☎ Номер телефона: <b>{(user_info['phone_number'])}</b>",
+                                                f"📞 Номер телефона: <b>{(user_info['phone_number'])}</b>",
                                         parse_mode=types.ParseMode.HTML,
                                         reply_markup=inline_kb_start)
     await callback.answer()
@@ -97,7 +118,7 @@ async def cmd_edit_user(callback: types.CallbackQuery):
     user_info = await get_user_info(callback.from_user.id)
     await callback.message.edit_caption(caption=f"👤 Пользователь: <b>{(user_info['name'])}</b>\n"
                                                 f"🏠 Комната: <b>{(user_info['room'])}</b>\n"
-                                                f"☎ Номер телефона: <b>{(user_info['phone_number'])}</b>\n\n"
+                                                f"📞 Номер телефона: <b>{(user_info['phone_number'])}</b>\n\n"
                                                 "Выберите пункт, который хотите редактировать 👇",
                                         parse_mode=types.ParseMode.HTML,
                                         reply_markup=inline_kb_edit)
@@ -119,6 +140,7 @@ async def cmd_edit(callback: types.CallbackQuery):
     await callback.answer()
 
 
+# Return from edit mode
 @dp.callback_query_handler(text='back_edit', state="*")
 async def edit_finish(callback: types.CallbackQuery, state: FSMContext):
     await state.finish()
@@ -126,10 +148,35 @@ async def edit_finish(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# @dp.callback_query_handler(text='back_book', state="*")
-# async def back_book(callback: types.CallbackQuery, state: FSMContext):
-#     await FSMBooking.previous()
-#     await callback.answer()
+@dp.callback_query_handler(text='back_book_date', state="*")
+async def back_book_date(callback: types.CallbackQuery, state: FSMContext):
+    user_info = await get_user_info(callback.from_user.id)
+    await callback.message.edit_caption(caption=f"👤 Пользователь: <b>{(user_info['name'])}</b>\n"
+                                                f"🏠 Комната: <b>{(user_info['room'])}</b>\n"
+                                                f"📞 Номер телефона: <b>{(user_info['phone_number'])}</b>",
+                                        parse_mode=types.ParseMode.HTML,
+                                        reply_markup=inline_kb_start)
+    await state.finish()
+    await callback.answer()
+
+
+@dp.callback_query_handler(text='back_book_time', state="*")
+async def back_book_time(callback: types.CallbackQuery):
+    await FSMBooking.date.set()
+    await callback.message.edit_caption(
+        caption="📅 Выберите желаемую свободную дату 👇", reply_markup=inline_kb_date)
+    await callback.answer()
+
+
+@dp.callback_query_handler(text='back_book_list', state="*")
+async def back_book_list(callback: types.CallbackQuery, state: FSMContext):
+    await FSMBooking.time.set()
+    await state.update_data(date=callback.data)
+    global res_per_day
+    res_per_day = await check_reservation_day(callback.data.replace('date_', ''))
+    await callback.message.edit_caption(
+        caption="🕒 Выберите время 👇", reply_markup=create_keyboard(callback.data))
+    await callback.answer()
 
 
 @dp.message_handler(state=FSMEdit.name)
@@ -141,7 +188,7 @@ async def edit_full_name(message: Message, state: FSMContext):
 
 
 @dp.message_handler(state=FSMEdit.room)
-async def edit_room(message: Message, state: FSMContext):
+async def edit_user_room(message: Message, state: FSMContext):
     await edit_room(message.from_user.id, message.text.strip())
     await message.answer(text="Данные обновлены ✅")
     await cmd_start(message)
@@ -154,7 +201,6 @@ async def edit_phone_num(message: Message, state: FSMContext):
     await message.answer(text="Данные обновлены ✅")
     await cmd_start(message)
     await state.finish()
-
 
 
 # Add user to db
@@ -205,15 +251,17 @@ async def cmd_book(callback: types.CallbackQuery):
     else:
         await FSMBooking.date.set()
         await callback.message.edit_caption(
-            caption="📅 Выберите желаемую дату 👇", reply_markup=inline_kb_date)
+            caption="📅 Выберите желаемую свободную дату 👇", reply_markup=inline_kb_date)
         await callback.answer()
 
 
 @dp.callback_query_handler(text_startswith='date_', state=FSMBooking.date)
 async def set_date(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(date=callback.data)
+    global res_per_day
+    res_per_day = await check_reservation_day(callback.data.replace('date_', ''))
     await callback.message.edit_caption(
-        caption="🕒 Выберите время 👇", reply_markup=inline_kb_time)
+        caption="🕒 Выберите время 👇", reply_markup=create_keyboard(callback.data))
     await FSMBooking.next()
     await callback.answer()
 
@@ -222,7 +270,7 @@ async def set_date(callback: types.CallbackQuery, state: FSMContext):
 async def set_time(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(time=callback.data)
     await callback.message.edit_caption("👯 Пожалуйста, напишите через запятую список всех людей,"
-                                        " которые идут с Вами в кинозал")
+                                        " которые идут с Вами в кинозал", reply_markup=inline_kb_list)
     await FSMBooking.next()
     await callback.answer()
 

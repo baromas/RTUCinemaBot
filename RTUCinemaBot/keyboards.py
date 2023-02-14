@@ -1,4 +1,4 @@
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import datetime
 
 # Клавиши отменить и назад
@@ -21,25 +21,36 @@ inline_kb_start = InlineKeyboardMarkup(row_width=1).add(inline_btn_check_res, in
 inline_kb_no_res = InlineKeyboardMarkup(row_width=1).add(inline_btn_book, inline_btn_back_str)
 
 # Клавиши FSM date
-inline_btn_back_book = InlineKeyboardButton('↩ Назад', callback_data='back_book')
-date0 = datetime.datetime.today()
-date1 = datetime.date.today() + datetime.timedelta(days=1)
-date2 = datetime.date.today() + datetime.timedelta(days=2)
-inline_btn_date0 = InlineKeyboardButton(f'{date0.strftime("%d.%m.%Y")}',
-                                        callback_data=f'date_{date0.strftime("%d.%m.%Y")}')
-inline_btn_date1 = InlineKeyboardButton(f'{date1.strftime("%d.%m.%Y")}',
-                                        callback_data=f'date_{date1.strftime("%d.%m.%Y")}')
-inline_btn_date2 = InlineKeyboardButton(f'{date2.strftime("%d.%m.%Y")}',
-                                        callback_data=f'date_{date2.strftime("%d.%m.%Y")}')
+date0 = datetime.date.today().strftime("%d.%m.%Y")
+date1 = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%d.%m.%Y")
+date2 = (datetime.date.today() + datetime.timedelta(days=2)).strftime("%d.%m.%Y")
+inline_btn_back_book_date = InlineKeyboardButton('↩ Назад', callback_data='back_book_date')
+inline_btn_date0 = InlineKeyboardButton(date0, callback_data=f'date_{date0}')
+inline_btn_date1 = InlineKeyboardButton(date1, callback_data=f'date_{date1}')
+inline_btn_date2 = InlineKeyboardButton(f'{date2}', callback_data=f'date_{date2}')
 inline_kb_date = InlineKeyboardMarkup(row_width=3).add(inline_btn_date0, inline_btn_date1,
-                                                       inline_btn_date2, inline_btn_back_book)
+                                                       inline_btn_date2, inline_btn_back_book_date)
 
 # Клавиши FSM time
 inline_btn_time0 = InlineKeyboardButton('16:00', callback_data='time_16:00')
 inline_btn_time1 = InlineKeyboardButton('18:00', callback_data='time_18:00')
 inline_btn_time2 = InlineKeyboardButton('20:00', callback_data='time_20:00')
-inline_kb_time = InlineKeyboardMarkup(row_width=3).add(inline_btn_time0, inline_btn_time1,
-                                                       inline_btn_time2, inline_btn_back_book)
+inline_btn_back_book_time = InlineKeyboardButton('↩ Назад', callback_data='back_book_time')
+'''
+inline_kb_time = InlineKeyboardMarkup(row_width=3)
+if reserv:
+    print(reserv)
+    if reserv['16:00'] and int(datetime.datetime.today().time().hour) < 16:
+        inline_kb_time.add(inline_btn_time0)
+    if reserv['18:00'] and int(datetime.datetime.today().time().hour) < 18:
+        inline_kb_time.add(inline_btn_time0)
+    if reserv['20:00'] and int(datetime.datetime.today().time().hour) < 20:
+        inline_kb_time.add(inline_btn_time0)
+    inline_kb_time.add(inline_btn_back_book_time)
+'''
+# Клавиша FSM list
+inline_btn_back_book_list = InlineKeyboardButton('↩ Назад', callback_data='back_book_list')
+inline_kb_list = InlineKeyboardMarkup().add(inline_btn_back_book_list)
 
 # Клавиши "Редактировать профиль"
 inline_btn_edit_name = InlineKeyboardButton('ФИО', callback_data='edit_name')
