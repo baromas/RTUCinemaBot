@@ -17,8 +17,17 @@ inline_btn_book = InlineKeyboardButton('Забронировать место в
 inline_btn_edit = InlineKeyboardButton('Редактировать профиль', callback_data='Редактировать профиль')
 inline_kb_start = InlineKeyboardMarkup(row_width=1).add(inline_btn_check_res, inline_btn_book, inline_btn_edit)
 
+# Клавиши, если "Мои бронирования" ==
+inline_btn_delete = InlineKeyboardButton('❌ Удалить запись', callback_data='delete_record')
+inline_kb_res = InlineKeyboardMarkup(row_width=1).add(inline_btn_delete, inline_btn_back_str)
+
 # Клавиша, если "Мои бронирования" == Null
 inline_kb_no_res = InlineKeyboardMarkup(row_width=1).add(inline_btn_book, inline_btn_back_str)
+
+# Проверить намерения пользователя
+inline_btn_yes = InlineKeyboardButton('Да', callback_data='Да')
+inline_btn_no = InlineKeyboardButton('Отмена ❌', callback_data='Мои бронирования')
+inline_kb_assure = InlineKeyboardMarkup(row_width=2).add(inline_btn_yes, inline_btn_no)
 
 # Клавиши FSM date
 date0 = datetime.date.today().strftime("%d.%m.%Y")
@@ -36,18 +45,7 @@ inline_btn_time0 = InlineKeyboardButton('16:00', callback_data='time_16:00')
 inline_btn_time1 = InlineKeyboardButton('18:00', callback_data='time_18:00')
 inline_btn_time2 = InlineKeyboardButton('20:00', callback_data='time_20:00')
 inline_btn_back_book_time = InlineKeyboardButton('↩ Назад', callback_data='back_book_time')
-'''
-inline_kb_time = InlineKeyboardMarkup(row_width=3)
-if reserv:
-    print(reserv)
-    if reserv['16:00'] and int(datetime.datetime.today().time().hour) < 16:
-        inline_kb_time.add(inline_btn_time0)
-    if reserv['18:00'] and int(datetime.datetime.today().time().hour) < 18:
-        inline_kb_time.add(inline_btn_time0)
-    if reserv['20:00'] and int(datetime.datetime.today().time().hour) < 20:
-        inline_kb_time.add(inline_btn_time0)
-    inline_kb_time.add(inline_btn_back_book_time)
-'''
+
 # Клавиша FSM list
 inline_btn_back_book_list = InlineKeyboardButton('↩ Назад', callback_data='back_book_list')
 inline_kb_list = InlineKeyboardMarkup().add(inline_btn_back_book_list)

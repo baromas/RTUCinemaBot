@@ -18,20 +18,19 @@ logo_path = Path(pathlib.Path.home(), 'RTUCinemaBot', 'RTUCinemaBot', 'CinemaBot
 
 def create_keyboard(date_chosen):
     inline_kb_time = InlineKeyboardMarkup(row_width=sum([1 for i in res_per_day if not res_per_day[i]]))
-    print(res_per_day, sum([1 for i in res_per_day if not res_per_day[i]]))
     date_format = datetime.datetime.strptime(date_chosen.replace('date_', ''), "%d.%m.%Y").day
     if not res_per_day[
-        '16:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and int(
-            datetime.datetime.today().time().hour) < 16):
-        inline_kb_time.add(inline_btn_time0)
+        '16:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and
+                      int(datetime.datetime.today().time().hour) < 16):
+        inline_kb_time.insert(inline_btn_time0)
     if not res_per_day[
-        '18:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and int(
-            datetime.datetime.today().time().hour) < 18):
-        inline_kb_time.add(inline_btn_time1)
+        '18:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and
+                      int(datetime.datetime.today().time().hour) < 18):
+        inline_kb_time.insert(inline_btn_time1)
     if not res_per_day[
-        '20:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and int(
-            datetime.datetime.today().time().hour) < 20):
-        inline_kb_time.add(inline_btn_time2)
+        '20:00'] and (date_format > datetime.datetime.today().day or date_format == datetime.datetime.today().day and
+                      int(datetime.datetime.today().time().hour) < 20):
+        inline_kb_time.insert(inline_btn_time2)
     inline_kb_time.add(inline_btn_back_book_time)
     return inline_kb_time
 
@@ -106,7 +105,7 @@ async def cmd_check_res(callback: types.CallbackQuery):
                                                     f"🕒 Время: <b>{(reservations['time'])}</b>\n"
                                                     f"👯 Список людей: <b>{(reservations['companions'])}</b>",
                                             parse_mode=types.ParseMode.HTML,
-                                            reply_markup=inline_kb_back)
+                                            reply_markup=inline_kb_res)
     else:
         await callback.message.edit_caption(caption="У Вас сейчас отсутствуют бронирования",
                                             reply_markup=inline_kb_no_res)
@@ -129,14 +128,36 @@ async def cmd_edit_user(callback: types.CallbackQuery):
 async def cmd_edit(callback: types.CallbackQuery):
     if callback.data.replace('edit_', '') == "name":
         await FSMEdit.name.set()
-        await callback.message.edit_caption(caption="Введите своё ФИО", reply_markup=inline_kb_back_edit)
+        await callback.message.edit_caption(caption="Введите своё ФИО:", reply_markup=inline_kb_back_edit)
     if callback.data.replace('edit_', '') == "room":
         await FSMEdit.room.set()
-        await callback.message.edit_caption(caption="Введите номер Вашей комнаты", reply_markup=inline_kb_back_edit)
+        await callback.message.edit_caption(caption="Введите номер Вашей комнаты:", reply_markup=inline_kb_back_edit)
     if callback.data.replace('edit_', '') == "phone":
         await FSMEdit.phone.set()
-        await callback.message.edit_caption(caption="Введите Ваш контактный номер телефона",
+        await callback.message.edit_caption(caption="Введите Ваш контактный номер телефона:",
                                             reply_markup=inline_kb_back_edit)
+    await callback.answer()
+
+
+# Delete record
+@dp.callback_query_handler(text='delete_record')
+async def edit_finish(callback: types.CallbackQuery):
+    await callback.message.edit_caption(caption="Вы уверены, что хотите удалить запись?",
+                                        reply_markup=inline_kb_assure)
+    await callback.answer()
+
+
+# Delete Y
+@dp.callback_query_handler(text='Да')
+async def edit_finish(callback: types.CallbackQuery):
+    await delete_record(callback.from_user.id)
+    await callback.message.answer("Бронирование отменено ✅")
+    user_info = await get_user_info(callback.from_user.id)
+    await callback.message.edit_caption(caption=f"👤 Пользователь: <b>{(user_info['name'])}</b>\n"
+                                                f"🏠 Комната: <b>{(user_info['room'])}</b>\n"
+                                                f"📞 Номер телефона: <b>{(user_info['phone_number'])}</b>",
+                                        parse_mode=types.ParseMode.HTML,
+                                        reply_markup=inline_kb_start)
     await callback.answer()
 
 
@@ -171,11 +192,12 @@ async def back_book_time(callback: types.CallbackQuery):
 @dp.callback_query_handler(text='back_book_list', state="*")
 async def back_book_list(callback: types.CallbackQuery, state: FSMContext):
     await FSMBooking.time.set()
-    await state.update_data(date=callback.data)
     global res_per_day
-    res_per_day = await check_reservation_day(callback.data.replace('date_', ''))
+    data = await state.get_data()
+    print(data["date"])
+    res_per_day = await check_reservation_day(data["date"].replace('date_', ''))
     await callback.message.edit_caption(
-        caption="🕒 Выберите время 👇", reply_markup=create_keyboard(callback.data))
+        caption="🕒 Выберите время 👇", reply_markup=create_keyboard(data["date"].replace('date_', '')))
     await callback.answer()
 
 
@@ -207,21 +229,21 @@ async def edit_phone_num(message: Message, state: FSMContext):
 @dp.callback_query_handler(Text("Продолжить"))
 async def cmd_add_user(callback: types.CallbackQuery):
     await FSMUserInfo.full_name.set()
-    await callback.message.answer(text="Введите своё ФИО")
+    await callback.message.answer(text="Введите своё ФИО:")
     await callback.answer()
 
 
 @dp.message_handler(state=FSMUserInfo.full_name)
 async def set_full_name(message: Message, state: FSMContext):
     await state.update_data(full_name=message.text.strip())
-    await message.answer(text="Введите номер блока и комнаты")
+    await message.answer(text="Введите номер блока и комнаты:")
     await FSMUserInfo.next()
 
 
 @dp.message_handler(state=FSMUserInfo.room)
 async def set_room(message: Message, state: FSMContext):
     await state.update_data(room=message.text.strip().replace(' ', '/').replace('\\', '/'))
-    await message.answer("Введите контактный номер телефона")
+    await message.answer("Введите контактный номер телефона:")
     await FSMUserInfo.next()
 
 
@@ -247,7 +269,7 @@ async def cmd_book(callback: types.CallbackQuery):
                                                     f"🕒 Время: <b>{(reservations['time'])}</b>\n"
                                                     f"👯 Список людей: <b>{(reservations['companions'])}</b>",
                                             parse_mode=types.ParseMode.HTML,
-                                            reply_markup=inline_kb_back)
+                                            reply_markup=inline_kb_res)
     else:
         await FSMBooking.date.set()
         await callback.message.edit_caption(

@@ -141,3 +141,11 @@ async def check_reservation_day(date):
     connect.commit()
     cursor.close()
     return reservation
+
+
+async def delete_record(user_id):
+    connect = sqlite3.connect('booking.db')
+    cursor = connect.cursor()
+    cursor.execute(f"DELETE from records WHERE user_id ='{user_id}'")
+    connect.commit()
+    cursor.close()
