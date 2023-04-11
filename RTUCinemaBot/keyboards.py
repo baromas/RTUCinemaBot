@@ -25,8 +25,8 @@ inline_kb_res = InlineKeyboardMarkup(row_width=1).add(inline_btn_delete, inline_
 inline_kb_no_res = InlineKeyboardMarkup(row_width=1).add(inline_btn_book, inline_btn_back_str)
 
 # Проверить намерения пользователя
-inline_btn_yes = InlineKeyboardButton('Да', callback_data='Да')
-inline_btn_no = InlineKeyboardButton('Отмена ❌', callback_data='Мои бронирования')
+inline_btn_yes = InlineKeyboardButton('🔥 Да', callback_data='Да')
+inline_btn_no = InlineKeyboardButton('↩ Отмена', callback_data='Мои бронирования')
 inline_kb_assure = InlineKeyboardMarkup(row_width=2).add(inline_btn_yes, inline_btn_no)
 
 # Клавиши FSM date
